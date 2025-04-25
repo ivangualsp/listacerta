@@ -160,12 +160,17 @@ async function saveShoppingList(shoppingList) {
     // Adicionar o ID do usuário à lista
     shoppingList.user_id = session.user.id;
     
+    // Garantir que a data de compra seja tratada corretamente
+    // O valor de purchase_date vem como YYYY-MM-DD do input date HTML
+    // Precisamos garantir que ela seja armazenada exatamente como foi inserida
+    const purchaseDate = shoppingList.purchase_date;
+    
     // Salvar a lista principal
     const { data: listData, error: listError } = await supabase
       .from('shopping_lists')
       .insert([{
         store_name: shoppingList.store_name,
-        purchase_date: shoppingList.purchase_date,
+        purchase_date: purchaseDate, // Usar a data diretamente como string
         notes: shoppingList.notes,
         total_price: shoppingList.total_price,
         user_id: shoppingList.user_id

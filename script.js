@@ -717,9 +717,21 @@ document.addEventListener('DOMContentLoaded', async function() {
             const listElement = document.createElement('div');
             listElement.className = 'saved-list-item';
             
-            // Formatar data
-            const date = new Date(list.purchase_date);
-            const formattedDate = date.toLocaleDateString('pt-BR');
+            // Formatar data adequadamente para evitar problemas com timezone
+            let formattedDate;
+            try {
+                // Pegar a data como string YYYY-MM-DD do banco
+                const dateStr = list.purchase_date;
+                
+                // Dividir a data para obter ano, mês e dia
+                const [year, month, day] = dateStr.split('-');
+                
+                // Formatar no padrão brasileiro
+                formattedDate = `${day}/${month}/${year}`;
+            } catch (e) {
+                console.error('Erro ao formatar data:', e);
+                formattedDate = 'Data indisponível';
+            }
             
             // Formatar preço
             const formattedPrice = list.total_price.toLocaleString('pt-BR', {
@@ -893,9 +905,21 @@ document.addEventListener('DOMContentLoaded', async function() {
         comparisonModal.className = 'modal';
         comparisonModal.id = 'comparison-modal';
         
-        // Formatar a data
-        const date = new Date(savedList.purchase_date);
-        const formattedDate = date.toLocaleDateString('pt-BR');
+        // Formatar a data usando o mesmo método corrigido
+        let formattedDate;
+        try {
+            // Pegar a data como string YYYY-MM-DD do banco
+            const dateStr = savedList.purchase_date;
+            
+            // Dividir a data para obter ano, mês e dia
+            const [year, month, day] = dateStr.split('-');
+            
+            // Formatar no padrão brasileiro
+            formattedDate = `${day}/${month}/${year}`;
+        } catch (e) {
+            console.error('Erro ao formatar data:', e);
+            formattedDate = 'Data indisponível';
+        }
         
         comparisonModal.innerHTML = `
             <div class="modal-content modal-large">
@@ -1136,8 +1160,20 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (listItems.length === 0) return;
         
         listItems.sort((a, b) => {
-            const dateA = new Date(a.querySelector('.saved-list-date').textContent.split('/').reverse().join('-'));
-            const dateB = new Date(b.querySelector('.saved-list-date').textContent.split('/').reverse().join('-'));
+            // Converter formato DD/MM/YYYY para YYYY-MM-DD para comparação
+            const dateTextA = a.querySelector('.saved-list-date').textContent;
+            const dateTextB = b.querySelector('.saved-list-date').textContent;
+            
+            // Converter do formato brasileiro (DD/MM/YYYY) para um formato que pode ser comparado
+            const datePartsA = dateTextA.split('/');
+            const datePartsB = dateTextB.split('/');
+            
+            // Criar data no formato YYYY-MM-DD
+            const dateStrA = datePartsA.length === 3 ? `${datePartsA[2]}-${datePartsA[1]}-${datePartsA[0]}` : '1970-01-01';
+            const dateStrB = datePartsB.length === 3 ? `${datePartsB[2]}-${datePartsB[1]}-${datePartsB[0]}` : '1970-01-01';
+            
+            const dateA = new Date(dateStrA);
+            const dateB = new Date(dateStrB);
             
             const priceA = parseFloat(a.querySelector('.saved-list-summary div').textContent
                 .replace('Total: R$', '')
