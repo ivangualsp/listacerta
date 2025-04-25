@@ -1061,3 +1061,116 @@ footer {
     color: var(--secondary-color);
     font-size: 0.9rem;
 }
+
+/* Auth Page Specific Styling */
+.auth-container {
+    max-width: 450px; /* Slightly wider */
+    margin: 4rem auto; /* More vertical space */
+    padding: 2.5rem;
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    background-color: var(--card-color);
+    border: 1px solid var(--border-color);
+}
+
+.auth-tabs {
+    display: flex;
+    margin-bottom: 2rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.auth-tab {
+    flex: 1;
+    padding: 1rem;
+    text-align: center;
+    font-weight: 500;
+    cursor: pointer;
+    color: var(--secondary-color);
+    border-bottom: 3px solid transparent; /* Placeholder for active border */
+    transition: color 0.3s ease, border-color 0.3s ease;
+    margin-bottom: -1px; /* Overlap border */
+}
+
+.auth-tab:hover {
+    color: var(--primary-color);
+}
+
+.auth-tab.active {
+    color: var(--primary-color);
+    border-bottom: 3px solid var(--primary-color);
+    font-weight: 600;
+}
+
+.auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem; /* Increased gap */
+}
+
+.auth-form .form-group {
+    margin-bottom: 0; /* Remove default form-group margin */
+}
+
+.auth-form label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    font-size: 0.9rem;
+    color: var(--secondary-color);
+}
+
+.auth-form input {
+    width: 100%;
+    padding: 0.9rem 1rem;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    background-color: var(--background-color);
+    color: var(--text-color);
+    font-size: 1rem;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.auth-form input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+}
+
+.auth-form button {
+    padding: 0.9rem;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    margin-top: 0.5rem; /* Add space above button */
+}
+
+.auth-form button:hover {
+    background-color: var(--secondary-color);
+    transform: translateY(-2px);
+}
+
+.auth-message {
+    margin-top: 1rem;
+    padding: 1rem;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    text-align: center;
+    border: 1px solid transparent;
+}
+
+.auth-message.error {
+    background-color: rgba(231, 76, 60, 0.1);
+    border-color: rgba(231, 76, 60, 0.3);
+    color: var(--danger-color);
+}
+
+.auth-message.success {
+    background-color: rgba(46, 204, 113, 0.1);
+    border-color: rgba(46, 204, 113, 0.3);
+    color: var(--accent-color);
+}
