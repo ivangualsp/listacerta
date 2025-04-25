@@ -10,13 +10,20 @@ import {
 
 document.addEventListener('DOMContentLoaded', async function() {
     // Verificar se o usuário está autenticado
-    const { data: { user }, error: userError } = await getCurrentUser();
+    const { data, error: userError } = await getCurrentUser();
+    
+    // Armazenar o usuário para uso em todo o script
+    const user = data?.user;
     
     if (!user) {
         // Redirecionar para a página de login se não estiver autenticado
+        console.error('Usuário não autenticado ou ocorreu um erro:', userError);
         window.location.href = 'auth.html';
         return;
     }
+    
+    // Log para debug
+    console.log('Usuário autenticado:', user.id);
     
     // Elementos do DOM
     const itemInput = document.getElementById('item-input');
@@ -131,6 +138,12 @@ document.addEventListener('DOMContentLoaded', async function() {
                 let price = parseFloat(priceInput.value) || 0;
                 price = Math.max(0, price); // Garantir que o preço não seja negativo
                 
+                // Verificar se user está definido
+                if (!user || !user.id) {
+                    console.error('Usuário não autenticado ou ID não disponível');
+                    return;
+                }
+                
                 const newItem = {
                     text: text,
                     quantity: quantity,
@@ -138,7 +151,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                     category: categorySelect.value,
                     price: price,
                     completed: false,
-                    created_at: new Date().toISOString()
+                    created_at: new Date().toISOString(),
+                    user_id: user.id // Adicionando explicitamente o user_id
                 };
                 
                 console.log("Novo item criado:", newItem); // Para debug

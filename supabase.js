@@ -44,12 +44,39 @@ async function getItems() {
 }
 
 async function addItem(item) {
+  console.log('Tentando adicionar item:', item);
+  
+  // Verificar autenticação
+  const { data: { session } } = await supabase.auth.getSession();
+  console.log('Status da sessão:', session ? 'Autenticado' : 'Não autenticado');
+  
+  if (!session) {
+    console.error('Erro: Usuário não autenticado ao tentar adicionar item');
+    return { error: { message: 'Usuário não autenticado' } };
+  }
+  
+  // Adicionar o ID do usuário ao item
+  item.user_id = session.user.id;
+  console.log('Adicionando item com user_id:', item.user_id);
+  
   const { data, error } = await supabase
     .from('shopping_items')
     .insert([item])
     .select();
   
-  return { data, error };
+  if (error) {
+    console.error('Erro ao adicionar item no Supabase:', error);
+    // Verificar detalhes do erro para ajudar no diagnóstico
+    if (error.code === '42501') {
+      console.error('Erro de permissão: RLS impediu a operação');
+    } else if (error.code === '23505') {
+      console.error('Erro de duplicação: O item já existe');
+    }
+    return { error };
+  }
+  
+  console.log('Item adicionado com sucesso:', data);
+  return { data };
 }
 
 async function updateItem(id, updates) {

@@ -196,16 +196,23 @@
                 const { data, error } = await signIn(email, password);
                 
                 if (error) {
+                    console.error('Erro de login:', error);
                     showMessage(loginMessage, error.message, true);
                 } else {
+                    console.log('Login bem-sucedido:', data);
                     showMessage(loginMessage, 'Login realizado com sucesso!');
+                    
+                    // Verificar a sessão criada
+                    const session = data.session;
+                    localStorage.setItem('supabase.auth.token', JSON.stringify(session));
+                    
                     setTimeout(() => {
                         window.location.href = 'index.html';
                     }, 1000);
                 }
             } catch (err) {
+                console.error('Exceção durante login:', err);
                 showMessage(loginMessage, 'Erro ao fazer login. Tente novamente.', true);
-                console.error(err);
             }
         });
         
