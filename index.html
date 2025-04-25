@@ -65,6 +65,8 @@
             <p>Comprados: <span id="completed-items">0</span> itens</p>
             <p>Valor Total: R$ <span id="total-price">0,00</span></p>
         </div>
+        
+        <button id="save-list-btn" class="primary-btn"><i class="fas fa-save"></i> Salvar Lista</button>
     </div>
     
     <!-- Modal para edição de itens -->
@@ -111,6 +113,67 @@
             </div>
         </div>
     </div>
+    
+    <!-- Modal para salvar lista -->
+    <div id="save-list-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Salvar Lista de Compras</h2>
+                <span class="close-modal" id="close-save-modal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="store-name">Nome do Estabelecimento</label>
+                    <input type="text" id="store-name" placeholder="Ex: Supermercado Central">
+                </div>
+                <div class="form-group">
+                    <label for="list-date">Data da Compra</label>
+                    <input type="date" id="list-date" value="">
+                </div>
+                <div class="form-group">
+                    <label for="list-notes">Observações (opcional)</label>
+                    <textarea id="list-notes" placeholder="Observações sobre esta lista..."></textarea>
+                </div>
+                
+                <div class="save-list-info">
+                    <p>Total de itens: <span id="save-total-items">0</span></p>
+                    <p>Valor total: R$ <span id="save-total-value">0,00</span></p>
+                </div>
+                
+                <button id="confirm-save-list" class="primary-btn">Salvar</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal para visualizar listas salvas -->
+    <div id="saved-lists-modal" class="modal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2>Listas Salvas</h2>
+                <span class="close-modal" id="close-saved-lists-modal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="saved-lists-container">
+                    <div class="saved-lists-filters">
+                        <input type="text" id="search-lists" placeholder="Pesquisar por estabelecimento...">
+                        <select id="sort-lists">
+                            <option value="date-desc">Data (mais recente)</option>
+                            <option value="date-asc">Data (mais antiga)</option>
+                            <option value="price-desc">Valor (maior)</option>
+                            <option value="price-asc">Valor (menor)</option>
+                        </select>
+                    </div>
+                    
+                    <div id="saved-lists" class="saved-lists">
+                        <!-- Listas salvas serão renderizadas aqui -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Botão para ver listas salvas -->
+    <button id="view-saved-lists-btn" class="secondary-btn"><i class="fas fa-history"></i> Ver Listas Salvas</button>
     
     <script type="module" src="script.js"></script>
 </body>

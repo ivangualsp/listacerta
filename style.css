@@ -474,3 +474,262 @@ header h1 {
     color: var(--primary-color);
     font-weight: 500;
 }
+
+/* Estilos para modais e listas salvas */
+.modal-large {
+    width: 90%;
+    max-width: 800px;
+}
+
+.save-list-info {
+    margin: 1rem 0;
+    padding: 0.8rem;
+    background-color: var(--card-color);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+}
+
+.form-group input, 
+.form-group textarea,
+.form-group select {
+    width: 100%;
+    padding: 0.75rem;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    background-color: var(--card-color);
+    color: var(--text-color);
+    font-family: inherit;
+}
+
+.form-group textarea {
+    height: 80px;
+    resize: vertical;
+}
+
+.saved-lists-filters {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.saved-lists-filters input {
+    flex: 1;
+}
+
+.saved-lists {
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.saved-list-item {
+    margin-bottom: 1rem;
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    background-color: var(--card-color);
+}
+
+.saved-list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.saved-list-title {
+    font-weight: 600;
+    font-size: 1.1em;
+}
+
+.saved-list-date {
+    color: var(--secondary-color);
+    font-size: 0.9em;
+}
+
+.saved-list-summary {
+    display: flex;
+    justify-content: space-between;
+    margin: 0.5rem 0;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.saved-list-details {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease-out;
+}
+
+.saved-list-details.expanded {
+    max-height: 500px;
+}
+
+.saved-list-actions {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 0.5rem;
+}
+
+.saved-list-notes {
+    font-style: italic;
+    color: var(--secondary-color);
+    margin: 0.5rem 0;
+    font-size: 0.9em;
+}
+
+.comparison-container {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.comparison-list {
+    flex: 1;
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    background-color: var(--background-color);
+}
+
+.comparison-header {
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border-color);
+    font-weight: 600;
+}
+
+#save-list-btn,
+#view-saved-lists-btn {
+    margin-left: 1rem;
+}
+
+/* Estilos para comparação de listas */
+.comparison-items {
+    list-style: none;
+    padding: 0;
+}
+
+.comparison-item {
+    padding: 0.5rem;
+    margin-bottom: 0.5rem;
+    border-radius: 4px;
+    border: 1px solid var(--border-color);
+}
+
+.comparison-item-details {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 0.25rem;
+    font-size: 0.9em;
+}
+
+.comparison-status {
+    font-weight: 500;
+}
+
+.price-lower {
+    background-color: rgba(0, 255, 0, 0.05);
+    border-left: 3px solid #4CAF50;
+}
+
+.price-higher {
+    background-color: rgba(255, 0, 0, 0.05);
+    border-left: 3px solid #F44336;
+}
+
+.price-equal {
+    background-color: rgba(255, 255, 0, 0.05);
+    border-left: 3px solid #FFC107;
+}
+
+.item-unique {
+    background-color: rgba(0, 0, 255, 0.05);
+    border-left: 3px solid #2196F3;
+}
+
+.comparison-summary {
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.comparison-stats {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.comparison-stat {
+    text-align: center;
+    margin-bottom: 1rem;
+}
+
+.stat-value {
+    display: block;
+    font-size: 1.5em;
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.stat-label {
+    font-size: 0.9em;
+    color: var(--secondary-color);
+}
+
+.comparison-details {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+.comparison-details p {
+    margin: 0;
+    padding: 0.5rem;
+    background-color: var(--card-bg);
+    border-radius: 4px;
+    text-align: center;
+}
+
+.saved-list-actions button {
+    padding: 0.4rem 0.8rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9em;
+}
+
+.load-list-btn {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.compare-list-btn {
+    background-color: #2196F3;
+    color: white;
+}
+
+.delete-list-btn {
+    background-color: #F44336;
+    color: white;
+}
+
+.toggle-details-btn {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    color: var(--text-color);
+    padding: 0.3rem 0.6rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9em;
+}

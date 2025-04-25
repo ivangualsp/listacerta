@@ -5,7 +5,11 @@ import {
     updateItem as updateItemInSupabase, 
     deleteItem as deleteItemFromSupabase, 
     clearCompletedItems as clearCompletedFromSupabase,
-    signOut
+    signOut,
+    saveShoppingList,
+    getSavedLists,
+    getSavedListDetails,
+    deleteSavedList
 } from './supabase.js';
 
 document.addEventListener('DOMContentLoaded', async function() {
@@ -106,6 +110,54 @@ document.addEventListener('DOMContentLoaded', async function() {
     });
     
     saveEditButton.addEventListener('click', saveEditedItem);
+    
+    // Elementos para salvar listas
+    const saveListBtn = document.getElementById('save-list-btn');
+    const saveListModal = document.getElementById('save-list-modal');
+    const closeSaveModal = document.getElementById('close-save-modal');
+    const storeNameInput = document.getElementById('store-name');
+    const listDateInput = document.getElementById('list-date');
+    const listNotesInput = document.getElementById('list-notes');
+    const saveTotalItems = document.getElementById('save-total-items');
+    const saveTotalValue = document.getElementById('save-total-value');
+    const confirmSaveList = document.getElementById('confirm-save-list');
+    
+    // Elementos para visualizar listas salvas
+    const viewSavedListsBtn = document.getElementById('view-saved-lists-btn');
+    const savedListsModal = document.getElementById('saved-lists-modal');
+    const closeSavedListsModal = document.getElementById('close-saved-lists-modal');
+    const savedListsContainer = document.getElementById('saved-lists');
+    const searchListsInput = document.getElementById('search-lists');
+    const sortListsSelect = document.getElementById('sort-lists');
+    
+    // Inicializar data atual no formulário de salvar lista
+    const today = new Date().toISOString().split('T')[0];
+    listDateInput.value = today;
+    
+    // Event Listeners para salvar e gerenciar listas
+    saveListBtn.addEventListener('click', openSaveListModal);
+    closeSaveModal.addEventListener('click', () => {
+        saveListModal.style.display = 'none';
+    });
+    confirmSaveList.addEventListener('click', saveCurrentList);
+    
+    viewSavedListsBtn.addEventListener('click', openSavedListsModal);
+    closeSavedListsModal.addEventListener('click', () => {
+        savedListsModal.style.display = 'none';
+    });
+    
+    searchListsInput.addEventListener('input', filterSavedLists);
+    sortListsSelect.addEventListener('change', sortSavedLists);
+    
+    // Fechar modais clicando fora
+    window.addEventListener('click', function(event) {
+        if (event.target === saveListModal) {
+            saveListModal.style.display = 'none';
+        }
+        if (event.target === savedListsModal) {
+            savedListsModal.style.display = 'none';
+        }
+    });
     
     // Funções
     async function loadItems() {
@@ -480,4 +532,565 @@ document.addEventListener('DOMContentLoaded', async function() {
             window.location.href = 'auth.html';
         }
     });
+    
+    // Funções para salvar e gerenciar listas
+    function openSaveListModal() {
+        if (items.length === 0) {
+            alert('Adicione itens à lista antes de salvar.');
+            return;
+        }
+        
+        // Preencher o resumo da lista
+        saveTotalItems.textContent = items.length;
+        
+        const totalPrice = items.reduce((total, item) => {
+            return total + (item.price || 0) * (item.quantity || 0);
+        }, 0);
+        
+        saveTotalValue.textContent = totalPrice.toLocaleString('pt-BR', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+        
+        // Exibir o modal
+        saveListModal.style.display = 'block';
+    }
+    
+    async function saveCurrentList() {
+        const storeName = storeNameInput.value.trim();
+        const purchaseDate = listDateInput.value;
+        const notes = listNotesInput.value.trim();
+        
+        if (!storeName) {
+            alert('Por favor, informe o nome do estabelecimento.');
+            return;
+        }
+        
+        if (!purchaseDate) {
+            alert('Por favor, informe a data da compra.');
+            return;
+        }
+        
+        const totalPrice = items.reduce((total, item) => {
+            return total + (item.price || 0) * (item.quantity || 0);
+        }, 0);
+        
+        try {
+            const shoppingListData = {
+                store_name: storeName,
+                purchase_date: purchaseDate,
+                notes: notes,
+                total_price: totalPrice,
+                items: items.map(item => ({
+                    text: item.text,
+                    quantity: item.quantity,
+                    unit: item.unit,
+                    category: item.category,
+                    price: item.price,
+                    completed: item.completed
+                }))
+            };
+            
+            const { data, error } = await saveShoppingList(shoppingListData);
+            
+            if (error) {
+                console.error('Erro ao salvar lista:', error);
+                alert('Erro ao salvar a lista: ' + (error.message || 'Tente novamente mais tarde.'));
+                return;
+            }
+            
+            alert('Lista salva com sucesso!');
+            saveListModal.style.display = 'none';
+            
+            // Limpar os campos
+            storeNameInput.value = '';
+            listNotesInput.value = '';
+        } catch (err) {
+            console.error('Erro ao salvar lista:', err);
+            alert('Erro ao salvar a lista. Tente novamente mais tarde.');
+        }
+    }
+    
+    async function openSavedListsModal() {
+        savedListsContainer.innerHTML = '<p>Carregando listas salvas...</p>';
+        savedListsModal.style.display = 'block';
+        
+        try {
+            const { data, error } = await getSavedLists();
+            
+            if (error) {
+                console.error('Erro ao carregar listas salvas:', error);
+                savedListsContainer.innerHTML = '<p>Erro ao carregar listas. Tente novamente mais tarde.</p>';
+                return;
+            }
+            
+            if (!data || data.length === 0) {
+                savedListsContainer.innerHTML = '<p>Nenhuma lista salva encontrada.</p>';
+                return;
+            }
+            
+            renderSavedLists(data);
+        } catch (err) {
+            console.error('Erro ao carregar listas salvas:', err);
+            savedListsContainer.innerHTML = '<p>Erro ao carregar listas. Tente novamente mais tarde.</p>';
+        }
+    }
+    
+    function renderSavedLists(lists) {
+        savedListsContainer.innerHTML = '';
+        
+        lists.forEach(list => {
+            const listElement = document.createElement('div');
+            listElement.className = 'saved-list-item';
+            
+            // Formatar data
+            const date = new Date(list.purchase_date);
+            const formattedDate = date.toLocaleDateString('pt-BR');
+            
+            // Formatar preço
+            const formattedPrice = list.total_price.toLocaleString('pt-BR', {
+                style: 'currency',
+                currency: 'BRL'
+            });
+            
+            listElement.innerHTML = `
+                <div class="saved-list-header">
+                    <div class="saved-list-title">${list.store_name}</div>
+                    <div class="saved-list-date">${formattedDate}</div>
+                </div>
+                <div class="saved-list-summary">
+                    <div>Total: ${formattedPrice}</div>
+                    <button class="toggle-details-btn" data-id="${list.id}">Ver Detalhes</button>
+                </div>
+                ${list.notes ? `<div class="saved-list-notes">${list.notes}</div>` : ''}
+                <div class="saved-list-details" id="details-${list.id}">
+                    <div class="saved-list-items-loading">Carregando itens...</div>
+                </div>
+                <div class="saved-list-actions">
+                    <button class="load-list-btn" data-id="${list.id}">Carregar Lista</button>
+                    <button class="compare-list-btn" data-id="${list.id}">Comparar</button>
+                    <button class="delete-list-btn" data-id="${list.id}">Excluir</button>
+                </div>
+            `;
+            
+            savedListsContainer.appendChild(listElement);
+            
+            // Adicionar event listeners aos botões
+            const toggleDetailsBtn = listElement.querySelector(`.toggle-details-btn[data-id="${list.id}"]`);
+            toggleDetailsBtn.addEventListener('click', () => toggleListDetails(list.id));
+            
+            const loadListBtn = listElement.querySelector(`.load-list-btn[data-id="${list.id}"]`);
+            loadListBtn.addEventListener('click', () => loadSavedList(list.id));
+            
+            const compareListBtn = listElement.querySelector(`.compare-list-btn[data-id="${list.id}"]`);
+            compareListBtn.addEventListener('click', () => compareWithCurrentList(list.id));
+            
+            const deleteListBtn = listElement.querySelector(`.delete-list-btn[data-id="${list.id}"]`);
+            deleteListBtn.addEventListener('click', () => confirmDeleteList(list.id, list.store_name));
+        });
+    }
+    
+    async function toggleListDetails(listId) {
+        const detailsContainer = document.getElementById(`details-${listId}`);
+        
+        if (detailsContainer.classList.contains('expanded')) {
+            detailsContainer.classList.remove('expanded');
+            return;
+        }
+        
+        detailsContainer.classList.add('expanded');
+        
+        // Carregar detalhes da lista se ainda não foram carregados
+        if (detailsContainer.querySelector('.saved-list-items-loading')) {
+            try {
+                const { data, error } = await getSavedListDetails(listId);
+                
+                if (error) {
+                    console.error('Erro ao carregar detalhes da lista:', error);
+                    detailsContainer.innerHTML = '<p>Erro ao carregar detalhes. Tente novamente.</p>';
+                    return;
+                }
+                
+                renderListDetails(detailsContainer, data.items);
+            } catch (err) {
+                console.error('Erro ao carregar detalhes da lista:', err);
+                detailsContainer.innerHTML = '<p>Erro ao carregar detalhes. Tente novamente.</p>';
+            }
+        }
+    }
+    
+    function renderListDetails(container, items) {
+        if (!items || items.length === 0) {
+            container.innerHTML = '<p>Nenhum item encontrado nesta lista.</p>';
+            return;
+        }
+        
+        const itemsList = document.createElement('ul');
+        itemsList.className = 'saved-list-items';
+        
+        items.forEach(item => {
+            const listItem = document.createElement('li');
+            
+            // Calcular o valor total do item
+            const itemTotal = (item.price || 0) * (item.quantity || 0);
+            const formattedPrice = item.price ? `R$ ${item.price.toFixed(2)}` : 'Sem preço';
+            const formattedTotal = `R$ ${itemTotal.toFixed(2)}`;
+            
+            listItem.innerHTML = `
+                <div class="saved-item-name">${item.text}</div>
+                <div class="saved-item-details">
+                    <span>${item.quantity || 1} ${item.unit || 'Un'}</span>
+                    <span>${formattedPrice}</span>
+                    <span class="saved-item-total">${formattedTotal}</span>
+                </div>
+            `;
+            
+            itemsList.appendChild(listItem);
+        });
+        
+        container.innerHTML = '';
+        container.appendChild(itemsList);
+    }
+    
+    async function loadSavedList(listId) {
+        if (items.length > 0) {
+            const confirmLoad = confirm('Isso substituirá sua lista atual. Deseja continuar?');
+            if (!confirmLoad) return;
+        }
+        
+        try {
+            const { data, error } = await getSavedListDetails(listId);
+            
+            if (error) {
+                console.error('Erro ao carregar lista:', error);
+                alert('Erro ao carregar a lista. Tente novamente mais tarde.');
+                return;
+            }
+            
+            // Substituir a lista atual com os itens da lista salva
+            items = data.items.map(item => ({
+                id: null, // Serão novos itens
+                text: item.text,
+                quantity: item.quantity,
+                unit: item.unit,
+                category: item.category,
+                price: item.price,
+                completed: false, // Sempre iniciar como não completados
+                user_id: user.id
+            }));
+            
+            renderItems();
+            updateCounters();
+            savedListsModal.style.display = 'none';
+            
+            alert(`Lista "${data.store_name}" carregada com sucesso!`);
+        } catch (err) {
+            console.error('Erro ao carregar lista:', err);
+            alert('Erro ao carregar a lista. Tente novamente mais tarde.');
+        }
+    }
+    
+    async function compareWithCurrentList(listId) {
+        if (items.length === 0) {
+            alert('Sua lista atual está vazia. Adicione itens para comparar.');
+            return;
+        }
+        
+        try {
+            const { data, error } = await getSavedListDetails(listId);
+            
+            if (error) {
+                console.error('Erro ao carregar detalhes para comparação:', error);
+                alert('Erro ao carregar dados para comparação. Tente novamente mais tarde.');
+                return;
+            }
+            
+            // Criar modal de comparação
+            createComparisonModal(data);
+        } catch (err) {
+            console.error('Erro ao comparar listas:', err);
+            alert('Erro ao comparar listas. Tente novamente mais tarde.');
+        }
+    }
+    
+    function createComparisonModal(savedList) {
+        // Criar elementos do modal
+        const comparisonModal = document.createElement('div');
+        comparisonModal.className = 'modal';
+        comparisonModal.id = 'comparison-modal';
+        
+        // Formatar a data
+        const date = new Date(savedList.purchase_date);
+        const formattedDate = date.toLocaleDateString('pt-BR');
+        
+        comparisonModal.innerHTML = `
+            <div class="modal-content modal-large">
+                <div class="modal-header">
+                    <h2>Comparação de Listas</h2>
+                    <span class="close-modal">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <div class="comparison-container">
+                        <div class="comparison-list">
+                            <div class="comparison-header">Lista Atual</div>
+                            <div id="current-list-comparison"></div>
+                        </div>
+                        <div class="comparison-list">
+                            <div class="comparison-header">${savedList.store_name} (${formattedDate})</div>
+                            <div id="saved-list-comparison"></div>
+                        </div>
+                    </div>
+                    <div class="comparison-summary">
+                        <h3>Resumo da Comparação</h3>
+                        <div id="comparison-results"></div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(comparisonModal);
+        
+        // Adicionar event listeners
+        const closeBtn = comparisonModal.querySelector('.close-modal');
+        closeBtn.addEventListener('click', () => {
+            document.body.removeChild(comparisonModal);
+        });
+        
+        window.addEventListener('click', function(event) {
+            if (event.target === comparisonModal) {
+                document.body.removeChild(comparisonModal);
+            }
+        });
+        
+        // Renderizar a comparação
+        renderComparisonLists(savedList);
+        
+        // Exibir o modal
+        comparisonModal.style.display = 'block';
+    }
+    
+    function renderComparisonLists(savedList) {
+        const currentListContainer = document.getElementById('current-list-comparison');
+        const savedListContainer = document.getElementById('saved-list-comparison');
+        const resultsContainer = document.getElementById('comparison-results');
+        
+        // Mapear itens por nome para facilitar a comparação
+        const currentItemsMap = new Map();
+        items.forEach(item => {
+            currentItemsMap.set(item.text.toLowerCase(), item);
+        });
+        
+        const savedItemsMap = new Map();
+        savedList.items.forEach(item => {
+            savedItemsMap.set(item.text.toLowerCase(), item);
+        });
+        
+        // Variáveis para o resumo
+        let totalSavings = 0;
+        let cheaperItems = 0;
+        let sameItems = 0;
+        let expensiveItems = 0;
+        let newItems = 0;
+        let missingItems = 0;
+        
+        // Renderizar a lista atual
+        currentListContainer.innerHTML = renderComparisonItemsList(items, savedItemsMap);
+        
+        // Renderizar a lista salva
+        savedListContainer.innerHTML = renderComparisonItemsList(savedList.items, currentItemsMap, true);
+        
+        // Analisar diferenças para o resumo
+        items.forEach(currentItem => {
+            const savedItem = savedItemsMap.get(currentItem.text.toLowerCase());
+            
+            if (savedItem) {
+                const currentTotal = (currentItem.price || 0) * (currentItem.quantity || 0);
+                const savedTotal = (savedItem.price || 0) * (savedItem.quantity || 0);
+                
+                if (currentItem.price && savedItem.price) {
+                    if (currentItem.price < savedItem.price) {
+                        cheaperItems++;
+                        totalSavings += (savedTotal - currentTotal);
+                    } else if (currentItem.price > savedItem.price) {
+                        expensiveItems++;
+                        totalSavings -= (currentTotal - savedTotal);
+                    } else {
+                        sameItems++;
+                    }
+                }
+            } else {
+                newItems++;
+            }
+        });
+        
+        // Verificar itens que existiam na lista salva mas não na lista atual
+        savedList.items.forEach(savedItem => {
+            if (!currentItemsMap.has(savedItem.text.toLowerCase())) {
+                missingItems++;
+            }
+        });
+        
+        // Renderizar o resumo
+        const formattedSavings = Math.abs(totalSavings).toLocaleString('pt-BR', {
+            style: 'currency',
+            currency: 'BRL'
+        });
+        
+        const savingsText = totalSavings > 0 
+            ? `Você está economizando ${formattedSavings}` 
+            : `Você está gastando ${formattedSavings} a mais`;
+        
+        resultsContainer.innerHTML = `
+            <div class="comparison-stats">
+                <div class="comparison-stat">
+                    <span class="stat-value">${savingsText}</span>
+                    <span class="stat-label">comparado à lista salva</span>
+                </div>
+                <div class="comparison-details">
+                    <p>${cheaperItems} itens mais baratos na lista atual</p>
+                    <p>${expensiveItems} itens mais caros na lista atual</p>
+                    <p>${sameItems} itens com o mesmo preço</p>
+                    <p>${newItems} itens novos (não existiam na lista salva)</p>
+                    <p>${missingItems} itens da lista salva não estão na lista atual</p>
+                </div>
+            </div>
+        `;
+    }
+    
+    function renderComparisonItemsList(itemsList, compareMap, isSavedList = false) {
+        if (!itemsList || itemsList.length === 0) {
+            return '<p>Nenhum item nesta lista.</p>';
+        }
+        
+        let html = '<ul class="comparison-items">';
+        
+        itemsList.forEach(item => {
+            const compareItem = compareMap.get(item.text.toLowerCase());
+            
+            let statusClass = '';
+            let statusText = '';
+            
+            if (compareItem) {
+                if (item.price && compareItem.price) {
+                    if (item.price < compareItem.price) {
+                        statusClass = 'price-lower';
+                        statusText = isSavedList ? 'Mais caro' : 'Mais barato';
+                    } else if (item.price > compareItem.price) {
+                        statusClass = 'price-higher';
+                        statusText = isSavedList ? 'Mais barato' : 'Mais caro';
+                    } else {
+                        statusClass = 'price-equal';
+                        statusText = 'Mesmo preço';
+                    }
+                }
+            } else {
+                statusClass = 'item-unique';
+                statusText = 'Único nesta lista';
+            }
+            
+            const formattedPrice = (item.price || 0).toLocaleString('pt-BR', {
+                style: 'currency',
+                currency: 'BRL'
+            });
+            
+            html += `
+                <li class="comparison-item ${statusClass}">
+                    <div class="comparison-item-name">${item.text}</div>
+                    <div class="comparison-item-details">
+                        <span>${item.quantity || 1} ${item.unit || 'Un'}</span>
+                        <span>${formattedPrice}</span>
+                        <span class="comparison-status">${statusText}</span>
+                    </div>
+                </li>
+            `;
+        });
+        
+        html += '</ul>';
+        return html;
+    }
+    
+    async function confirmDeleteList(listId, storeName) {
+        const confirmDelete = confirm(`Tem certeza que deseja excluir a lista "${storeName}"? Esta ação não pode ser desfeita.`);
+        
+        if (!confirmDelete) return;
+        
+        try {
+            const { error } = await deleteSavedList(listId);
+            
+            if (error) {
+                console.error('Erro ao excluir lista:', error);
+                alert('Erro ao excluir a lista. Tente novamente mais tarde.');
+                return;
+            }
+            
+            // Remover o elemento da lista no DOM
+            const listElement = document.querySelector(`.saved-list-item .delete-list-btn[data-id="${listId}"]`).closest('.saved-list-item');
+            listElement.remove();
+            
+            // Verificar se há mais listas
+            if (savedListsContainer.children.length === 0) {
+                savedListsContainer.innerHTML = '<p>Nenhuma lista salva encontrada.</p>';
+            }
+            
+            alert('Lista excluída com sucesso!');
+        } catch (err) {
+            console.error('Erro ao excluir lista:', err);
+            alert('Erro ao excluir a lista. Tente novamente mais tarde.');
+        }
+    }
+    
+    function filterSavedLists() {
+        const searchTerm = searchListsInput.value.toLowerCase().trim();
+        const listItems = savedListsContainer.querySelectorAll('.saved-list-item');
+        
+        listItems.forEach(item => {
+            const storeName = item.querySelector('.saved-list-title').textContent.toLowerCase();
+            const notes = item.querySelector('.saved-list-notes')?.textContent.toLowerCase() || '';
+            
+            if (storeName.includes(searchTerm) || notes.includes(searchTerm)) {
+                item.style.display = 'block';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+    }
+    
+    function sortSavedLists() {
+        const sortValue = sortListsSelect.value;
+        const listItems = Array.from(savedListsContainer.querySelectorAll('.saved-list-item'));
+        
+        if (listItems.length === 0) return;
+        
+        listItems.sort((a, b) => {
+            const dateA = new Date(a.querySelector('.saved-list-date').textContent.split('/').reverse().join('-'));
+            const dateB = new Date(b.querySelector('.saved-list-date').textContent.split('/').reverse().join('-'));
+            
+            const priceA = parseFloat(a.querySelector('.saved-list-summary div').textContent
+                .replace('Total: R$', '')
+                .replace('.', '')
+                .replace(',', '.'));
+            const priceB = parseFloat(b.querySelector('.saved-list-summary div').textContent
+                .replace('Total: R$', '')
+                .replace('.', '')
+                .replace(',', '.'));
+            
+            switch (sortValue) {
+                case 'date-desc':
+                    return dateB - dateA;
+                case 'date-asc':
+                    return dateA - dateB;
+                case 'price-desc':
+                    return priceB - priceA;
+                case 'price-asc':
+                    return priceA - priceB;
+                default:
+                    return 0;
+            }
+        });
+        
+        // Remover e adicionar de volta na nova ordem
+        listItems.forEach(item => {
+            savedListsContainer.appendChild(item);
+        });
+    }
 });
