@@ -330,7 +330,10 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         // Validar os valores
         const text = editItemInput.value.trim();
-        if (!text) return;
+        if (!text) {
+            alert('Por favor, informe o nome do item');
+            return;
+        }
         
         let quantity = parseFloat(editQuantityInput.value) || 1;
         quantity = Math.max(0.1, quantity);
@@ -338,19 +341,40 @@ document.addEventListener('DOMContentLoaded', async function() {
         let price = parseFloat(editPriceInput.value) || 0;
         price = Math.max(0, price);
         
+        // Mostrar feedback visual
+        const originalButtonText = saveEditButton.textContent;
+        saveEditButton.textContent = 'Salvando...';
+        saveEditButton.disabled = true;
+        
         const updates = {
             text: text,
             quantity: quantity,
             unit: editUnitSelect.value,
             price: price,
-            category: editCategorySelect.value
+            category: editCategorySelect.value,
+            user_id: user.id // Importante: garantir que o user_id esteja incluído
         };
+        
+        console.log('Enviando atualização para item:', editingItemId, updates);
         
         try {
             const { data, error } = await updateItemInSupabase(editingItemId, updates);
             
+            // Restaurar o botão
+            saveEditButton.textContent = originalButtonText;
+            saveEditButton.disabled = false;
+            
             if (error) {
                 console.error('Erro ao atualizar item:', error);
+                alert('Erro ao atualizar item: ' + (error.message || 'Tente novamente mais tarde'));
+                return;
+            }
+            
+            console.log('Dados retornados após atualização:', data);
+            
+            if (!data || data.length === 0) {
+                console.error('Nenhum dado retornado após atualização');
+                alert('Erro ao atualizar item: Nenhum dado retornado');
                 return;
             }
             
@@ -365,8 +389,24 @@ document.addEventListener('DOMContentLoaded', async function() {
             renderItems();
             updateCounters();
             closeEditModal();
+            
+            // Feedback opcional
+            const feedbackMessage = document.createElement('div');
+            feedbackMessage.className = 'success-message';
+            feedbackMessage.textContent = 'Item atualizado com sucesso!';
+            document.body.appendChild(feedbackMessage);
+            
+            setTimeout(() => {
+                document.body.removeChild(feedbackMessage);
+            }, 2000);
+            
         } catch (err) {
-            console.error('Erro ao atualizar item:', err);
+            console.error('Exceção ao atualizar item:', err);
+            alert('Erro inesperado ao atualizar item');
+            
+            // Restaurar o botão em caso de erro
+            saveEditButton.textContent = originalButtonText;
+            saveEditButton.disabled = false;
         }
     }
     

@@ -80,13 +80,49 @@ async function addItem(item) {
 }
 
 async function updateItem(id, updates) {
-  const { data, error } = await supabase
-    .from('shopping_items')
-    .update(updates)
-    .eq('id', id)
-    .select();
+  console.log('Atualizando item com ID:', id, 'Atualizações:', updates);
   
-  return { data, error };
+  try {
+    // Verificar autenticação
+    const { data: { session } } = await supabase.auth.getSession();
+    console.log('Status da sessão para atualização:', session ? 'Autenticado' : 'Não autenticado');
+    
+    if (!session) {
+      console.error('Erro: Usuário não autenticado ao tentar atualizar item');
+      return { error: { message: 'Usuário não autenticado' } };
+    }
+    
+    // Adicionar o ID do usuário à atualização para garantir as políticas RLS
+    if (!updates.user_id) {
+      updates.user_id = session.user.id;
+    }
+    
+    const { data, error } = await supabase
+      .from('shopping_items')
+      .update(updates)
+      .eq('id', id)
+      .select();
+    
+    if (error) {
+      console.error('Erro ao atualizar item:', error);
+      return { error };
+    }
+    
+    if (!data || data.length === 0) {
+      console.error('Nenhum dado retornado ao atualizar. O item talvez não exista ou você não tem permissão.');
+      return { 
+        error: { 
+          message: 'Não foi possível atualizar o item. Ele pode não existir ou você não tem permissão.' 
+        } 
+      };
+    }
+    
+    console.log('Item atualizado com sucesso:', data);
+    return { data };
+  } catch (err) {
+    console.error('Exceção ao atualizar item:', err);
+    return { error: { message: 'Erro inesperado ao atualizar o item', details: err.message } };
+  }
 }
 
 async function deleteItem(id) {
