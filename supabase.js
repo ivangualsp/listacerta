@@ -111,55 +111,77 @@ async function clearCompletedItems() {
 async function saveShoppingList(shoppingList) {
   console.log('Salvando lista de compras:', shoppingList);
   
-  // Verificar autenticação
-  const { data: { session } } = await supabase.auth.getSession();
-  
-  if (!session) {
-    console.error('Erro: Usuário não autenticado ao tentar salvar lista');
-    return { error: { message: 'Usuário não autenticado' } };
+  try {
+    // Verificar autenticação
+    const { data: { session } } = await supabase.auth.getSession();
+    console.log('Status da sessão:', session ? 'Autenticado' : 'Não autenticado');
+    
+    if (!session) {
+      console.error('Erro: Usuário não autenticado ao tentar salvar lista');
+      return { error: { message: 'Usuário não autenticado' } };
+    }
+    
+    // Adicionar o ID do usuário à lista
+    shoppingList.user_id = session.user.id;
+    
+    // Salvar a lista principal
+    const { data: listData, error: listError } = await supabase
+      .from('shopping_lists')
+      .insert([{
+        store_name: shoppingList.store_name,
+        purchase_date: shoppingList.purchase_date,
+        notes: shoppingList.notes,
+        total_price: shoppingList.total_price,
+        user_id: shoppingList.user_id
+      }])
+      .select();
+    
+    if (listError) {
+      console.error('Erro ao salvar lista:', listError);
+      // Mensagem mais específica para erros conhecidos
+      if (listError.code === '42P01') {
+        return { error: { message: 'A tabela shopping_lists não existe. Execute a migração SQL.' } };
+      }
+      return { error: listError };
+    }
+    
+    if (!listData || listData.length === 0) {
+      console.error('Erro: Nenhum dado retornado ao inserir a lista');
+      return { error: { message: 'Erro ao criar a lista' } };
+    }
+    
+    const list_id = listData[0].id;
+    console.log('Lista criada com ID:', list_id);
+    
+    // Salvar os itens da lista
+    const itemsWithListId = shoppingList.items.map(item => ({
+      ...item,
+      list_id: list_id,
+      user_id: session.user.id
+    }));
+    
+    const { error: itemsError } = await supabase
+      .from('shopping_list_items')
+      .insert(itemsWithListId);
+    
+    if (itemsError) {
+      console.error('Erro ao salvar itens da lista:', itemsError);
+      // Mensagem mais específica para erros conhecidos
+      if (itemsError.code === '42P01') {
+        // Se falhar ao salvar os itens, exclui a lista principal
+        await supabase.from('shopping_lists').delete().eq('id', list_id);
+        return { error: { message: 'A tabela shopping_list_items não existe. Execute a migração SQL.' } };
+      }
+      // Se falhar ao salvar os itens, exclui a lista principal
+      await supabase.from('shopping_lists').delete().eq('id', list_id);
+      return { error: itemsError };
+    }
+    
+    return { data: listData };
+  } catch (err) {
+    console.error('Exceção ao salvar lista:', err);
+    return { error: { message: 'Erro inesperado ao salvar a lista', details: err.message } };
   }
-  
-  // Adicionar o ID do usuário à lista
-  shoppingList.user_id = session.user.id;
-  
-  // Salvar a lista principal
-  const { data: listData, error: listError } = await supabase
-    .from('shopping_lists')
-    .insert([{
-      store_name: shoppingList.store_name,
-      purchase_date: shoppingList.purchase_date,
-      notes: shoppingList.notes,
-      total_price: shoppingList.total_price,
-      user_id: shoppingList.user_id
-    }])
-    .select();
-  
-  if (listError) {
-    console.error('Erro ao salvar lista:', listError);
-    return { error: listError };
-  }
-  
-  const list_id = listData[0].id;
-  
-  // Salvar os itens da lista
-  const itemsWithListId = shoppingList.items.map(item => ({
-    ...item,
-    list_id: list_id,
-    user_id: session.user.id
-  }));
-  
-  const { error: itemsError } = await supabase
-    .from('shopping_list_items')
-    .insert(itemsWithListId);
-  
-  if (itemsError) {
-    console.error('Erro ao salvar itens da lista:', itemsError);
-    // Se falhar ao salvar os itens, exclui a lista principal
-    await supabase.from('shopping_lists').delete().eq('id', list_id);
-    return { error: itemsError };
-  }
-  
-  return { data: listData };
 }
 
 async function getSavedLists() {

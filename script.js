@@ -576,6 +576,11 @@ document.addEventListener('DOMContentLoaded', async function() {
         }, 0);
         
         try {
+            // Mostrar um feedback visual de que está salvando
+            const originalButtonText = confirmSaveList.textContent;
+            confirmSaveList.textContent = 'Salvando...';
+            confirmSaveList.disabled = true;
+            
             const shoppingListData = {
                 store_name: storeName,
                 purchase_date: purchaseDate,
@@ -593,9 +598,29 @@ document.addEventListener('DOMContentLoaded', async function() {
             
             const { data, error } = await saveShoppingList(shoppingListData);
             
+            // Restaurar o botão
+            confirmSaveList.textContent = originalButtonText;
+            confirmSaveList.disabled = false;
+            
             if (error) {
                 console.error('Erro ao salvar lista:', error);
-                alert('Erro ao salvar a lista: ' + (error.message || 'Tente novamente mais tarde.'));
+                
+                // Mensagem mais informativa baseada no erro
+                let errorMessage = 'Erro ao salvar a lista';
+                
+                if (error.message) {
+                    errorMessage += ': ' + error.message;
+                } else if (error.code === '42P01') {
+                    errorMessage += ': As tabelas necessárias não existem no banco de dados. Execute a migração SQL primeiro.';
+                } else if (error.code === '23505') {
+                    errorMessage += ': Já existe uma lista com essas informações.';
+                } else if (error.code === '42501') {
+                    errorMessage += ': Você não tem permissão para realizar esta operação.';
+                } else {
+                    errorMessage += '. Tente novamente mais tarde.';
+                }
+                
+                alert(errorMessage);
                 return;
             }
             
@@ -605,9 +630,18 @@ document.addEventListener('DOMContentLoaded', async function() {
             // Limpar os campos
             storeNameInput.value = '';
             listNotesInput.value = '';
+            
+            // Opcionalmente, recarregar as listas salvas se o modal estiver aberto
+            if (savedListsModal.style.display === 'block') {
+                openSavedListsModal();
+            }
         } catch (err) {
-            console.error('Erro ao salvar lista:', err);
-            alert('Erro ao salvar a lista. Tente novamente mais tarde.');
+            console.error('Exceção ao salvar lista:', err);
+            alert('Erro inesperado ao salvar a lista. Por favor, tente novamente.');
+            
+            // Restaurar o botão em caso de erro
+            confirmSaveList.textContent = originalButtonText;
+            confirmSaveList.disabled = false;
         }
     }
     
