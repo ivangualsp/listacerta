@@ -1048,10 +1048,10 @@ document.addEventListener('DOMContentLoaded', async function() {
                 if (item.price && compareItem.price) {
                     if (item.price < compareItem.price) {
                         statusClass = 'price-lower';
-                        statusText = isSavedList ? 'Mais caro' : 'Mais barato';
+                        statusText = 'Mais barato';
                     } else if (item.price > compareItem.price) {
                         statusClass = 'price-higher';
-                        statusText = isSavedList ? 'Mais barato' : 'Mais caro';
+                        statusText = 'Mais caro';
                     } else {
                         statusClass = 'price-equal';
                         statusText = 'Mesmo preço';
